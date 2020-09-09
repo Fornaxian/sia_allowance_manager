@@ -47,9 +47,20 @@ func adjustAllowance(sia *client.Client, conf Config, scPrice float64) (err erro
 	}
 
 	var (
-		lowBound     = funds.Div64(10) // 10%
-		highBound    = funds.Div64(4)  // 25%
-		adjustMargin = funds.Div64(10) // 10%
+		// The low bound is the amount if unallocated funds at which the
+		// allowance will need to be increased. This is currently set to 5% of
+		// the total allowance
+		lowBound = funds.Div64(20)
+
+		// The high bound is the amount of unallocated funds at which the
+		// allowance will need to be decreased. This is currently set to 20% of
+		// the total allowance
+		highBound = funds.Div64(5)
+
+		// The adjust margin is the amount of siacoins by which the allowance
+		// will be adjusted when the allowance is increased or decreased. This
+		// is currently set to 1/20 of the allowance, or 5%
+		adjustMargin = funds.Div64(20)
 	)
 
 	log.Debug(
@@ -57,13 +68,10 @@ func adjustAllowance(sia *client.Client, conf Config, scPrice float64) (err erro
 		lowBound.HumanString(), unspentUnallocated.HumanString(), highBound.HumanString(),
 	)
 
-	// If the unspent unallocated funds are less than 10% of the total funds we
-	// increase the allowance by 10%. We set the expected storage / upload /
-	// download size based on the Siacoin price
+	// If the unspent unallocated funds are less than the low bound we increase
+	// the allowance. If they are more than the high bound we decrease the
+	// allowance. If they are between the two values we do nothing
 	if unspentUnallocated.Cmp(lowBound) <= 0 {
-		// Unallocated funds are less than 10% of the total allowance. We need
-		// to increase it to continue uploading. Here we increase the allowance
-		// by 10%
 
 		funds = funds.Add(adjustMargin)
 		log.Debug("Funds too low. Increasing to: %s", funds.HumanString())
