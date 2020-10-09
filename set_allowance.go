@@ -96,7 +96,7 @@ func adjustAllowance(sia *client.Client, conf Config, scPrice float64) (err erro
 		fundsEUR         = fundsSC * scPrice
 		allowanceMonths  = float64(rg.Settings.Allowance.Period) / float64(blocksMonth)
 		fundsEURPerMonth = fundsEUR / allowanceMonths
-		expectedStorage  = fundsEURPerMonth / conf.MaxStoragePriceTBMonth * 1e12
+		expectedStorage  = (fundsEURPerMonth / (conf.MaxStoragePriceTBMonth * conf.Redundancy)) * 1e12
 		expectedUpload   = expectedStorage * 0.1
 		expectedDownload = expectedStorage * 0.2
 	)

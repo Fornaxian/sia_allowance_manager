@@ -10,7 +10,7 @@ import (
 func filterHosts(sia *client.Client, conf Config, scPrice float64) (err error) {
 	var (
 		eur              = types.SiacoinPrecision.MulFloat(1 / scPrice)
-		maxStoragePrice  = eur.MulFloat(conf.MaxStoragePriceTBMonth / conf.Redundancy).Div64(1e12).Div64(blocksMonth)
+		maxStoragePrice  = eur.MulFloat(conf.MaxStoragePriceTBMonth).Div64(1e12).Div64(blocksMonth)
 		maxUploadPrice   = eur.MulFloat(conf.MaxUploadPriceTB).Div64(1e12)
 		maxDownloadPrice = eur.MulFloat(conf.MaxDownloadPriceTB).Div64(1e12)
 		maxCollateral    = eur.MulFloat(conf.MaxCollateralTBMonth).Div64(1e12).Div64(blocksMonth)

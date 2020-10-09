@@ -10,17 +10,16 @@ import (
 type Config struct {
 	SiaAPIPassword string `toml:"sia_api_password"`
 
-	// This price includes redundancy. This is what the user ends up paying
+	// These prices are per host, without redundancy. Multiply the storage and
+	// collateral values by the Redundancy float to get the prices which the
+	// renter ends up paying
 	MaxStoragePriceTBMonth    float64 `toml:"max_storage_price_tb_month"`
 	MaxDownloadPriceTB        float64 `toml:"max_download_price_tb"`
 	MaxUploadPriceTB          float64 `toml:"max_upload_price_tb"`
 	MaxContractFormationPrice float64 `toml:"max_contract_formation_price"`
-
-	// This price is without redundancy. The collateral price is calculated per
-	// host
-	MaxCollateralTBMonth float64 `toml:"max_collateral_tb_month"`
-	Redundancy           float64 `toml:"redundancy"`
-	Hosts                uint64  `toml:"hosts"`
+	MaxCollateralTBMonth      float64 `toml:"max_collateral_tb_month"`
+	Redundancy                float64 `toml:"redundancy"`
+	Hosts                     uint64  `toml:"hosts"`
 }
 
 const defaultConf = `# Allowance manager configuration
@@ -28,23 +27,24 @@ const defaultConf = `# Allowance manager configuration
 # Password for accessing the Sia API. Can be found in ~/.sia/apipassword
 sia_api_password = ""
 
-# Max storage price in euros per month per TB including redundancy.
-max_storage_price_tb_month = 4.50
+# Max storage price in euros per month per TB per host (without redundancy)
+max_storage_price_tb_month = 2.00
 
 # Max download price in euros per TB
-max_download_price_tb = 1.00
+max_download_price_tb = 2.50
 
 # Max upload price in euros per TB
-max_upload_price_tb = 0.50
+max_upload_price_tb = 2.00
 
 # Max contract formation fee in euros per contract
-max_contract_formation_price = 0.01
+max_contract_formation_price = 0.10
 
-# Max collateral price in euros per month per terabyte. This value is per host.
-# So without redundancy
-max_collateral_tb_month = 5.00
+# Max collateral price in euros per month per TB per host (without redundancy)
+max_collateral_tb_month = 8.00
 
-# Default redundancy value to use in calculations
+# Data redundancy value to use in calculations. When setting the allowance the
+# max_storage_price_tb_month and max_collateral_tb_month will be multiplied by
+# this value in order to calculate the real price you will end up paying
 redundancy = 3.00
 
 # Number of hosts to use when creating contracts
