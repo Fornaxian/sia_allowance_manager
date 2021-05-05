@@ -25,8 +25,9 @@ func adjustAllowance(sia *client.Client, conf Config, scPrice float64) (err erro
 	fm := rg.FinancialMetrics
 
 	funds := rg.Settings.Allowance.Funds
-	if funds.IsZero() {
-		funds = types.SiacoinPrecision.Mul64(500) // Start with 500 SC
+	if funds.Cmp(types.SiacoinPrecision.Mul64(1000)) == -1 {
+		log.Info("Allowance is below minimum of 1 KS. Defaulting to 1 KS")
+		funds = types.SiacoinPrecision.Mul64(1000) // Start with 1000 SC
 	}
 
 	spent := fm.ContractFees.
@@ -47,20 +48,20 @@ func adjustAllowance(sia *client.Client, conf Config, scPrice float64) (err erro
 	}
 
 	var (
-		// The low bound is the amount if unallocated funds at which the
-		// allowance will need to be increased. This is currently set to 5% of
+		// The low bound is the amount of unallocated funds at which the
+		// allowance will need to be increased. This is currently set to 12.5% of
 		// the total allowance
-		lowBound = funds.Div64(20)
+		lowBound = funds.Div64(8)
 
 		// The high bound is the amount of unallocated funds at which the
-		// allowance will need to be decreased. This is currently set to 20% of
+		// allowance will need to be decreased. This is currently set to 50% of
 		// the total allowance
-		highBound = funds.Div64(5)
+		highBound = funds.Div64(2)
 
 		// The adjust margin is the amount of siacoins by which the allowance
 		// will be adjusted when the allowance is increased or decreased. This
-		// is currently set to 1/20 of the allowance, or 5%
-		adjustMargin = funds.Div64(20)
+		// is currently set to 1/5 of the allowance, or 20%
+		adjustMargin = funds.Div64(5)
 	)
 
 	log.Debug(
@@ -76,8 +77,9 @@ func adjustAllowance(sia *client.Client, conf Config, scPrice float64) (err erro
 		funds = funds.Add(adjustMargin)
 		log.Debug("Funds too low. Increasing to: %s", funds.HumanString())
 	} else if unspentUnallocated.Cmp(highBound) >= 0 {
-		// Unallocated funds are more than 25% of the allowance. We need to
-		// decrease it to save money on fees. Here we lower the allowance by 10%
+		// Unallocated funds are more than configured high bound. We need to
+		// decrease it to save money on fees. Here we lower the allowance by the
+		// configured adjust margin
 
 		funds = funds.Sub(adjustMargin)
 		log.Debug("Funds too high. Decreasing to: %s", funds.HumanString())
@@ -119,6 +121,8 @@ func adjustAllowance(sia *client.Client, conf Config, scPrice float64) (err erro
 		WithExpectedUpload(uint64(expectedUpload / float64(rg.Settings.Allowance.Period))).
 		WithExpectedDownload(uint64(expectedDownload / float64(rg.Settings.Allowance.Period))).
 		WithExpectedRedundancy(conf.Redundancy).
+		WithPeriod(types.BlockHeight(conf.ContractLength)).
+		WithRenewWindow(types.BlockHeight(conf.RenewWindow)).
 		WithHosts(conf.Hosts).
 		WithFunds(funds).Send()
 }

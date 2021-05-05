@@ -20,6 +20,8 @@ type Config struct {
 	MaxCollateralTBMonth      float64 `toml:"max_collateral_tb_month"`
 	Redundancy                float64 `toml:"redundancy"`
 	Hosts                     uint64  `toml:"hosts"`
+	ContractLength            uint64  `toml:"contract_length"`
+	RenewWindow               uint64  `toml:"renew_window"`
 }
 
 const defaultConf = `# Allowance manager configuration
@@ -28,7 +30,7 @@ const defaultConf = `# Allowance manager configuration
 sia_api_password = ""
 
 # Max storage price in euros per month per TB per host (without redundancy)
-max_storage_price_tb_month = 2.00
+max_storage_price_tb_month = 1.80
 
 # Max download price in euros per TB
 max_download_price_tb = 2.50
@@ -49,6 +51,12 @@ redundancy = 3.00
 
 # Number of hosts to use when creating contracts
 hosts = 50
+
+# Contract length and renew window in blocks. The defaults are 3 months and one
+# month, respectively. Assuming a month is exactly 30 days, which it isn't. But
+# it's close enough
+contract_length = 12960
+renew_window = 4320
 `
 
 func main() {
