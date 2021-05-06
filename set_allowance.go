@@ -60,8 +60,8 @@ func adjustAllowance(sia *client.Client, conf Config, scPrice float64) (err erro
 
 		// The adjust margin is the amount of siacoins by which the allowance
 		// will be adjusted when the allowance is increased or decreased. This
-		// is currently set to 1/5 of the allowance, or 20%
-		adjustMargin = funds.Div64(5)
+		// is currently set to 1/8 of the allowance, or 12.5%
+		adjustMargin = funds.Div64(8)
 	)
 
 	log.Debug(
@@ -95,12 +95,21 @@ func adjustAllowance(sia *client.Client, conf Config, scPrice float64) (err erro
 	fundsSC, _ := funds.Div64(1e12).Float64()
 	fundsSC /= 1e12
 	var (
+		// Calculate allowance based on configured storage price
 		fundsEUR         = fundsSC * scPrice
 		allowanceMonths  = float64(rg.Settings.Allowance.Period) / float64(blocksMonth)
 		fundsEURPerMonth = fundsEUR / allowanceMonths
 		expectedStorage  = (fundsEURPerMonth / (conf.MaxStoragePriceTBMonth * conf.Redundancy)) * 1e12
-		expectedUpload   = expectedStorage * 0.1
+		expectedUpload   = expectedStorage * 0.2
 		expectedDownload = expectedStorage * 0.2
+
+		// Calculate host pricing limits based on configured rates
+		eur              = types.SiacoinPrecision.MulFloat(1 / scPrice)
+		maxStoragePrice  = eur.MulFloat(conf.MaxStoragePriceTBMonth).Div64(1e12).Div64(blocksMonth)
+		maxUploadPrice   = eur.MulFloat(conf.MaxUploadPriceTB).Div64(1e12)
+		maxDownloadPrice = eur.MulFloat(conf.MaxDownloadPriceTB).Div64(1e12)
+		// maxCollateral    = eur.MulFloat(conf.MaxCollateralTBMonth).Div64(1e12).Div64(blocksMonth)
+		maxContractPrice = eur.MulFloat(conf.MaxContractFormationPrice)
 	)
 
 	log.Debug(
@@ -115,11 +124,14 @@ func adjustAllowance(sia *client.Client, conf Config, scPrice float64) (err erro
 	)
 
 	// Set the allowance using the calculated values
-	// return nil
 	return sia.RenterPostPartialAllowance().
 		WithExpectedStorage(uint64(expectedStorage)).
 		WithExpectedUpload(uint64(expectedUpload / float64(rg.Settings.Allowance.Period))).
 		WithExpectedDownload(uint64(expectedDownload / float64(rg.Settings.Allowance.Period))).
+		WithMaxStoragePrice(maxStoragePrice).
+		WithMaxUploadBandwidthPrice(maxUploadPrice).
+		WithMaxDownloadBandwidthPrice(maxDownloadPrice).
+		WithMaxContractPrice(maxContractPrice).
 		WithExpectedRedundancy(conf.Redundancy).
 		WithPeriod(types.BlockHeight(conf.ContractLength)).
 		WithRenewWindow(types.BlockHeight(conf.RenewWindow)).
